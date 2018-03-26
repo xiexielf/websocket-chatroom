@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>chat room by socket.io</title>
+	<style type="text/css" media="screen">
+		html,body,h1,h1,h3,h4,h5,h6,p{
+			padding: 0;
+			margin: 0;
+		}
+		html,body{
+			background-color: #dfe3e4;
+		}
+		h2{
+			text-align: center;
+		}
+		#chat_room_wrap{
+			width: 100%;
+		}
+		#chat_room{
+			width: 700px;
+			height: 360px;
+			margin: auto;
+			border: 2px solid #82a2ea;
+			border-radius: 10px 10px 0 0;
+			overflow: hidden;
+		}
+		#chat_content_wrap{
+			background-color: #fff;
+			padding: 10px 0;
+		}
+		#chat_content{
+			height: 300px;
+			padding: 0 90px;
+			background-color: #fff;
+			overflow-y: scroll;
+			overflow-x: auto;
+		}
+		.message{
+			position: relative;
+			padding: 0 10px;
+			margin-bottom: 10px;
+		}
+		.message-prompt:last-child{
+			margin-bottom: 0;
+		}
+		.message > span {
+			display: inline-block;
+			max-width: 60%;
+			font-size: 16px;
+			padding: 7px 10px;
+			color: #fff;
+			background-color: #409eff;
+			border-radius: 5px;
+	    text-align: left;
+		}
+		.message > .super {
+			position: absolute;
+			top: 4px;
+			border-style: solid;
+      border-width: 6px 6px 6px 6px;
+      width: 0px;
+      height: 0px;
+		}
+		.message > .name {
+			position: absolute;
+			top: 0;
+			border-radius: 50%;
+			width: 70px;
+			height: 40px;
+			line-height: 40px;
+			white-space: nowrap;
+			text-align: center;
+			background: #dcdcdc;
+			text-overflow: ellipsis;
+			overflow: hidden;
+		}
+		.received{
+			text-align: left;
+		}
+		.received > .super {
+			left: 0;
+      border-color: #409eff #409eff transparent transparent;
+		}
+		.received > .name {
+			left: -80px;
+		}
+		.send{
+			text-align: right;
+		}
+		.send > .super {
+			right: 0;
+			border-color: #409eff transparent transparent #409eff;
+		}
+		.send > .name {
+			right: -80px;
+		}
+		.prompt{
+			margin-bottom: 10px;
+			text-align: center;
+			font-size: 10px;
+		}
+		.prompt > span {
+			display: inline-block;
+			padding: 3px 7px;
+			border-radius: 5px;
+			color: #fff;
+		}
+		.come_in > span {
+			background-color: #67c23a;
+		}
+		.come_out > span {
+			background-color: #e6a23c;
+		}
+		
+		#operate{
+			display: flex;
+			justify-content: space-around;
+			align-items: center;
+			width: 100%;
+			height: 40px;
+		}
+		#input{
+			width: 75%;
+			height: 35px;
+			box-sizing: border-box;
+    	outline: none;
+			border: 1px solid #fff;
+		}
+		#send{
+			width: 20%;
+			height: 35px;
+	    box-sizing: border-box;
+    	outline: none;
+			border: 1px solid #409eff;
+			background: #409eff;
+			border-radius: 3px;
+			color: #fff;
+			cursor: pointer;
+		}
+	</style>
+	<script type="text/javascript" src="socket.io.2.0.3.js"></script>
+</head>
+<body>
+	<h2>欢迎使用WebSocket简单聊天室</h2>
+	<div id="chat_room_wrap">
+		<div id="chat_room">
+			<div id="chat_content_wrap">
+				<div id="chat_content">
+					<!-- <p class="message-prompt message received">
+						<em class="name">user_name</em>
+						<i class="super"></i>
+						<span>你好！</span>
+					</p>
+					<p class="message-prompt prompt come_in">
+						<span>user—1加入会话</span>
+					</p>
+					<p class="message-prompt message send">
+						<em class="name">user_name</em>
+						<i class="super"></i>
+						<span>你好！</span>
+					</p>
+					<p class="message-prompt prompt come_out">
+						<span>user—1离开会话</span>
+					</p> -->
+				</div>
+			</div>
+			<div id="operate">
+				<input id="input" type="text" name="">
+				<button id="send" type="button">发送</button>
+			</div>
+		</div>
+	</div>
+	<script type="text/javascript">
+		var socket = io('http://localhost:3000/');
+		var user_name = ''
+
+	  socket.on('enter', function (data) {
+	  	if (user_name == '') {
+	  		user_name = data.name;	
+	  	}
+	    comeIn_Out(data);
+	  });
+
+	  socket.on('receive', function (data) {
+	  	debugger
+	  	if (user_name === data.name) {
+	  		sendMessage(data)
+	  	} else {
+	  		receiveMessage(data)
+	  	}
+	  })
+
+	  socket.on('leave', function(data) {
+	  	comeIn_Out(data)
+	  })
+
+		document.getElementById("send").onclick = function(e) {
+			var text = document.getElementById("input").value;
+			if (text !== "") {
+				socket.emit('send', {
+					name: socket.nickname,
+					message: text
+				})
+				document.getElementById("input").value = ""
+			}
+		}
+
+		function sendMessage(data) {		//当前用户发送数据
+			var oDiv = document.createElement("p")
+			oDiv.className = 'message-prompt message send'
+			oDiv.innerHTML = `
+				<em class="name" title="${data.name}">${data.name}</em>
+				<i class="super"></i>
+				<span>${data.message}</span>
+			`
+			document.getElementById("chat_content").appendChild(oDiv)
+		}
+
+		function receiveMessage(data) {   //当前用户接受数据
+			var oDiv = document.createElement("p")
+			oDiv.className ='message-prompt message received'
+			oDiv.innerHTML = `
+				<em class="name" title="${data.name}">${data.name}</em>
+				<i class="super"></i>
+				<span>${data.message}</span>
+			`
+			document.getElementById("chat_content").appendChild(oDiv)
+
+		}
+
+		function comeIn_Out(data){		//用户加入或者离开
+			var oDiv = document.createElement("p")
+			oDiv.className = 'message-prompt prompt'
+			if (data.type === "in") {
+				oDiv.className += " come_in"
+				oDiv.innerHTML = `<span>${data.name} 加入会话</span>`
+			} else {
+				oDiv.className += " come_out"
+				oDiv.innerHTML = `<span>${data.name} 离开会话</span>`
+			}
+
+			document.getElementById("chat_content").appendChild(oDiv)
+
+		}
+
+		function autoScroll(){
+			if (chat_content.clientHeight < chat_content.scrollHeight) {
+				chat_content.scrollTop=chat_content.scrollHeight - chat_content.clientHeight
+			}
+		}
+	</script>
+	
+</body>
+</html>
